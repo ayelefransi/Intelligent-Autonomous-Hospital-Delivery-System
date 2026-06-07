@@ -1,0 +1,1 @@
+docker exec hospital-robot bash -c 'source /opt/ros/jazzy/setup.bash && ros2 topic pub --once /goal_pose geometry_msgs/msg/PoseStamped "{header: {frame_id: map}, pose: {position: {x: 1.0, y: 1.0, z: 0.0}, orientation: {w: 1.0}}}"'

@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<robot name="hospital_turtlebot4" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ============================================================
+       Intelligent Autonomous Hospital Delivery Robot
+       Based on TurtleBot4 platform with hospital extensions
+
+       Robot features:
+         - Differential drive base (TurtleBot4 specs)
+         - 2D LiDAR (RPLidar A1 spec, 360 degrees, 12m range)
+         - IMU (200 Hz)
+         - RGB-D camera (OAK-D spec)
+         - Ultrasonic proximity sensors x4
+         - Top-mounted payload delivery compartment
+         - Status LED strip
+
+       Compatibility:
+         - ROS 2 Jazzy
+         - Gazebo Harmonic
+         - WSL2 Ubuntu 24.04
+
+       TF Tree:
+         odom -> base_footprint -> base_link
+           -> left_wheel_link
+           -> right_wheel_link
+           -> laser_frame
+           -> imu_link
+           -> camera_link -> camera_optical_link
+           -> payload_frame_link -> payload_box_link
+       ============================================================ -->
+
+  <!-- Namespacing support for multi-robot -->
+  <xacro:arg name="robot_name"      default=""/>
+  <xacro:arg name="namespace"       default=""/>
+
+  <xacro:property name="namespace"  value="$(arg namespace)"/>
+
+  <!-- ==================== INCLUDE COMPONENTS ================== -->
+  <xacro:include filename="$(find hospital_robot_description)/urdf/components/base.xacro"/>
+  <xacro:include filename="$(find hospital_robot_description)/urdf/components/sensors.xacro"/>
+  <xacro:include filename="$(find hospital_robot_description)/urdf/components/payload.xacro"/>
+
+  <!-- ==================== GLOBAL GAZEBO PROPERTIES ============ -->
+  <gazebo>
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+  </gazebo>
+
+  <gazebo>
+    <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu"/>
+  </gazebo>
+
+  <!-- ==================== BASE LINK MATERIAL ================== -->
+  <gazebo reference="base_link">
+    <material>Gazebo/DarkGrey</material>
+    <mu1>0.8</mu1>
+    <mu2>0.8</mu2>
+  </gazebo>
+
+  <!-- ==================== PAYLOAD BOX MATERIAL ================ -->
+  <gazebo reference="payload_box_link">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+</robot>

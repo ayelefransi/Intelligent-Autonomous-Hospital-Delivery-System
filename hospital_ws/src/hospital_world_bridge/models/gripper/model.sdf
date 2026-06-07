@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="gripper">
+    <static>true</static>
+
+    <!-- Wrist base (mount block at front of tray) -->
+    <link name="wrist_base">
+      <pose>0 0 0.06 0 0 0</pose>
+      <visual name="wrist_visual">
+        <geometry>
+          <box><size>0.04 0.06 0.03</size></box>
+        </geometry>
+        <material>
+          <ambient>0.25 0.25 0.30 1.0</ambient>
+          <diffuse>0.30 0.30 0.35 1.0</diffuse>
+          <specular>0.5 0.5 0.5 1.0</specular>
+        </material>
+      </visual>
+      <collision name="wrist_collision">
+        <geometry>
+          <box><size>0.04 0.06 0.03</size></box>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Left finger (vertical bar) -->
+    <link name="finger_left">
+      <pose>0 -0.07 0.0 0 0 0</pose>
+      <visual name="left_finger_visual">
+        <geometry>
+          <box><size>0.015 0.015 0.12</size></box>
+        </geometry>
+        <material>
+          <ambient>0.35 0.35 0.40 1.0</ambient>
+          <diffuse>0.40 0.40 0.45 1.0</diffuse>
+          <specular>0.6 0.6 0.6 1.0</specular>
+        </material>
+      </visual>
+      <collision name="left_finger_collision">
+        <geometry>
+          <box><size>0.015 0.015 0.12</size></box>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Right finger (vertical bar, mirrored) -->
+    <link name="finger_right">
+      <pose>0 0.07 0.0 0 0 0</pose>
+      <visual name="right_finger_visual">
+        <geometry>
+          <box><size>0.015 0.015 0.12</size></box>
+        </geometry>
+        <material>
+          <ambient>0.35 0.35 0.40 1.0</ambient>
+          <diffuse>0.40 0.40 0.45 1.0</diffuse>
+          <specular>0.6 0.6 0.6 1.0</specular>
+        </material>
+      </visual>
+      <collision name="right_finger_collision">
+        <geometry>
+          <box><size>0.015 0.015 0.12</size></box>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Payload held between fingers (0.15x0.10x0.08 — same as station box) -->
+    <link name="payload_held">
+      <pose>0 0 -0.04 0 0 0</pose>
+      <visual name="payload_visual">
+        <geometry>
+          <box><size>0.15 0.10 0.08</size></box>
+        </geometry>
+        <material>
+          <ambient>1.0 0.0 0.0 1.0</ambient>
+          <diffuse>1.0 0.1 0.1 1.0</diffuse>
+          <specular>0.8 0.2 0.2 1.0</specular>
+          <emissive>0.3 0.0 0.0 1.0</emissive>
+        </material>
+      </visual>
+    </link>
+
+    <!-- Fixed joints — single rigid assembly -->
+    <joint name="wrist_to_left" type="fixed">
+      <parent>wrist_base</parent>
+      <child>finger_left</child>
+    </joint>
+    <joint name="wrist_to_right" type="fixed">
+      <parent>wrist_base</parent>
+      <child>finger_right</child>
+    </joint>
+    <joint name="wrist_to_payload" type="fixed">
+      <parent>wrist_base</parent>
+      <child>payload_held</child>
+    </joint>
+
+  </model>
+</sdf>

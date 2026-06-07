@@ -1,0 +1,131 @@
+<?xml version="1.0"?>
+<!--
+  Hospital Navigation Behavior Tree
+  ============================================================
+  Implements:
+    - Navigate to delivery waypoint
+    - Dynamic obstacle handling with recovery
+    - Hospital-specific behaviors (slow in ICU, etc.)
+    - Multi-point delivery sequences
+    - Replanning on path failure
+  ============================================================
+-->
+<root BTCPP_format="4" main_tree_to_execute="HospitalNavigate">
+
+  <!-- ==================== HOSPITAL NAVIGATE ================ -->
+  <BehaviorTree ID="HospitalNavigate">
+    <RecoveryNode number_of_retries="6" name="NavigateRecovery">
+
+      <PipelineSequence name="NavigateWithReplanning">
+
+        <!-- Rate-controlled path validity check -->
+        <RateController hz="1.0">
+          <RecoveryNode number_of_retries="1" name="ComputePathRecovery">
+            <ReactiveSequence name="RecomputePathSeq">
+              <PathExpiringTimer seconds="2.0"/>
+              <ComputePathToPose goal="{goal}" path="{path}" planner_id="SmacHybrid"/>
+            </ReactiveSequence>
+            <ReactiveFallback name="ComputePathFallback">
+              <GoalUpdated/>
+              <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+            </ReactiveFallback>
+          </RecoveryNode>
+        </RateController>
+
+        <!-- Smooth path before following -->
+        <SmoothPath path="{path}" smoothed_path="{path}"/>
+
+        <!-- Path-following with obstacle recovery -->
+        <RecoveryNode number_of_retries="3" name="FollowPathRecovery">
+
+          <ReactiveSequence name="FollowWithObstacleCheck">
+            <!-- Stop if global path becomes invalid -->
+            <IsPathValid path="{path}"/>
+            <!-- Follow path with MPPI controller -->
+            <FollowPath path="{path}" controller_id="FollowPath"/>
+          </ReactiveSequence>
+
+          <!-- Recovery behaviors on failure -->
+          <ReactiveFallback name="RecoveryFallback">
+            <!-- Accept new goals during recovery -->
+            <GoalUpdated/>
+            <!-- Recovery sequence -->
+            <RoundRobin name="RecoveryActions">
+              <!-- Attempt 1: Wait for dynamic obstacle to clear -->
+              <Sequence name="WaitAndRetry">
+                <Wait duration="2.0"/>
+                <ClearEntireCostmap name="ClearLocal"
+                  service_name="local_costmap/clear_entirely_local_costmap"/>
+              </Sequence>
+              <!-- Attempt 2: Back up -->
+              <Sequence name="BackupSeq">
+                <BackUp backup_dist="0.5" backup_speed="0.05"/>
+                <ClearEntireCostmap name="ClearLocal2"
+                  service_name="local_costmap/clear_entirely_local_costmap"/>
+              </Sequence>
+              <!-- Attempt 3: Spin to reorient -->
+              <Sequence name="SpinSeq">
+                <Spin spin_dist="1.57"/>
+                <ClearEntireCostmap name="ClearGlobal"
+                  service_name="global_costmap/clear_entirely_global_costmap"/>
+              </Sequence>
+              <!-- Attempt 4: Reinitialize localization -->
+              <ReinitializeGlobalLocalization/>
+            </RoundRobin>
+          </ReactiveFallback>
+
+        </RecoveryNode>
+
+      </PipelineSequence>
+
+      <!-- Global recovery: clear all and spin -->
+      <ReactiveFallback name="GlobalRecoveryFallback">
+        <GoalUpdated/>
+        <Sequence name="GlobalRecovery">
+          <ClearEntireCostmap name="ClearLocalGlobal"
+            service_name="local_costmap/clear_entirely_local_costmap"/>
+          <ClearEntireCostmap name="ClearGlobalGlobal"
+            service_name="global_costmap/clear_entirely_global_costmap"/>
+          <Spin spin_dist="3.14"/>
+        </Sequence>
+      </ReactiveFallback>
+
+    </RecoveryNode>
+  </BehaviorTree>
+
+  <!-- ==================== HOSPITAL DELIVERY BT ============= -->
+  <BehaviorTree ID="HospitalDelivery">
+    <Sequence name="DeliveryMission">
+
+      <!-- Phase 1: Navigate to pickup -->
+      <SubTree ID="HospitalNavigate" goal="{pickup_pose}"/>
+
+      <!-- Phase 2: Wait for payload loading confirmation -->
+      <Wait duration="3.0"/>
+
+      <!-- Phase 3: Navigate to delivery destination -->
+      <SubTree ID="HospitalNavigate" goal="{delivery_pose}"/>
+
+      <!-- Phase 4: Wait for payload unloading -->
+      <Wait duration="3.0"/>
+
+      <!-- Phase 5: Return to home/docking -->
+      <SubTree ID="HospitalNavigate" goal="{home_pose}"/>
+
+    </Sequence>
+  </BehaviorTree>
+
+  <!-- ==================== NAVIGATE THROUGH POSES =========== -->
+  <BehaviorTree ID="NavigateThroughPoses">
+    <RecoveryNode number_of_retries="6" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="1.0">
+          <ComputePathThroughPoses goals="{goals}" path="{path}" planner_id="SmacHybrid"/>
+        </RateController>
+        <FollowPath path="{path}" controller_id="FollowPath"/>
+      </PipelineSequence>
+      <Spin spin_dist="1.57"/>
+    </RecoveryNode>
+  </BehaviorTree>
+
+</root>

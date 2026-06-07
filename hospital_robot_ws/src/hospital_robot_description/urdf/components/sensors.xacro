@@ -1,0 +1,217 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ============================================================
+       Hospital TurtleBot4 Sensor Suite
+       - 2D LiDAR (RPLidar A1 spec)
+       - IMU (ICM-42688-P spec)
+       - RGB-D Camera (OAK-D spec)
+       - Ultrasonic proximity sensors (optional)
+       Compatible: ROS 2 Jazzy + Gazebo Harmonic
+       ============================================================ -->
+
+  <xacro:property name="lidar_x"      value="0.12"/>
+  <xacro:property name="lidar_y"      value="0.0"/>
+  <xacro:property name="lidar_z"      value="0.12"/>
+  <xacro:property name="camera_x"     value="0.10"/>
+  <xacro:property name="camera_y"     value="0.0"/>
+  <xacro:property name="camera_z"     value="0.30"/>
+  <xacro:property name="imu_x"        value="0.0"/>
+  <xacro:property name="imu_y"        value="0.0"/>
+  <xacro:property name="imu_z"        value="0.05"/>
+
+  <!-- ==================== 2D LIDAR ============================= -->
+  <link name="laser_frame">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.065"/></geometry>
+      <material name="blue"><color rgba="0.1 0.3 0.8 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.04" length="0.065"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.17"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="laser_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="laser_frame"/>
+    <origin xyz="${lidar_x} ${lidar_y} ${lidar_z}" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="laser_frame">
+    <sensor name="lidar" type="gpu_lidar">
+      <topic>scan</topic>
+      <update_rate>10</update_rate>
+      <always_on>true</always_on>
+      <visualize>false</visualize>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>360</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159</min_angle>
+            <max_angle> 3.14159</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.15</min>
+          <max>12.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+  <!-- ==================== IMU ================================== -->
+  <link name="imu_link">
+    <visual>
+      <geometry><box size="0.02 0.02 0.005"/></geometry>
+      <material name="green"><color rgba="0.0 0.8 0.0 1.0"/></material>
+    </visual>
+    <collision>
+      <geometry><box size="0.02 0.02 0.005"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.005"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+    </inertial>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="imu_link"/>
+    <origin xyz="${imu_x} ${imu_y} ${imu_z}" rpy="0 0 0"/>
+  </joint>
+
+  <gazebo reference="imu_link">
+    <sensor name="imu_sensor" type="imu">
+      <topic>imu</topic>
+      <update_rate>200</update_rate>
+      <always_on>true</always_on>
+      <imu>
+        <angular_velocity>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>0.0002</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>0.0002</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>0.0002</stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>0.017</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>0.017</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>0.017</stddev></noise></z>
+        </linear_acceleration>
+      </imu>
+    </sensor>
+  </gazebo>
+
+  <!-- ==================== RGB-D CAMERA ======================== -->
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.095 0.025 0.036"/></geometry>
+      <material name="black_camera"><color rgba="0.1 0.1 0.1 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.095 0.025 0.036"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.072"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="camera_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="camera_link"/>
+    <origin xyz="${camera_x} ${camera_y} ${camera_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Camera optical frame -->
+  <link name="camera_optical_link"/>
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child  link="camera_optical_link"/>
+    <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+  </joint>
+
+  <gazebo reference="camera_link">
+    <!-- RGB Camera -->
+    <sensor name="rgb_camera" type="camera">
+      <topic>camera/image_raw</topic>
+      <update_rate>30</update_rate>
+      <always_on>true</always_on>
+      <camera>
+        <horizontal_fov>1.2217</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>100</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+    </sensor>
+    <!-- Depth Camera -->
+    <sensor name="depth_camera" type="depth_camera">
+      <topic>camera/depth/image_raw</topic>
+      <update_rate>15</update_rate>
+      <always_on>true</always_on>
+      <camera>
+        <horizontal_fov>1.2217</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>10.0</far>
+        </clip>
+      </camera>
+    </sensor>
+  </gazebo>
+
+  <!-- ==================== ULTRASONIC SENSORS ================== -->
+  <xacro:macro name="ultrasonic" params="name x y angle">
+    <link name="${name}_sonar_link">
+      <visual>
+        <geometry><box size="0.01 0.02 0.01"/></geometry>
+        <material name="sonar_color"><color rgba="0.8 0.6 0.0 1.0"/></material>
+      </visual>
+      <collision>
+        <geometry><box size="0.01 0.02 0.01"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+      </inertial>
+    </link>
+    <joint name="${name}_sonar_joint" type="fixed">
+      <parent link="base_link"/>
+      <child  link="${name}_sonar_link"/>
+      <origin xyz="${x} ${y} 0.0" rpy="0 0 ${angle}"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:ultrasonic name="front"       x=" 0.175" y=" 0.0"   angle="0.0"/>
+  <xacro:ultrasonic name="front_left"  x=" 0.12"  y=" 0.12"  angle="0.785"/>
+  <xacro:ultrasonic name="front_right" x=" 0.12"  y="-0.12"  angle="-0.785"/>
+  <xacro:ultrasonic name="rear"        x="-0.175" y=" 0.0"   angle="${pi}"/>
+
+</robot>
